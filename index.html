@@ -1,101 +1,1161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carbon to Silicon – Fassadenkonfigurator</title>
+<style>
+  :root { --bg:#f4f4f2; --panel:#ffffff; --ink:#1a1a1a; --mut:#666; --line:#d8d8d4; --accent:#1763ff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  #ui {
+    position:fixed; top:16px; left:16px; width:344px; max-width:calc(100vw - 32px);
+    max-height:calc(100vh - 32px); overflow:auto;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px 16px 14px; box-shadow:0 6px 24px rgba(0,0,0,.08); font-size:13px;
+  }
+  #ui h1 { font-size:15px; margin:0 0 2px; }
+  #ui .sub { color:var(--mut); font-size:11px; margin:0 0 12px; }
+  .div { margin:14px 0 8px; padding-top:10px; border-top:1px solid var(--line);
+    font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); }
+  .row { margin:10px 0; }
+  .row label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .row label b { font-weight:600; }
+  .row input[type=range] { width:100%; accent-color:var(--accent); }
+  .row textarea {width:100%;min-height:68px;resize:vertical;padding:9px;font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+  .row select { width:100%; font:inherit; font-size:12px; padding:4px 6px; border:1px solid var(--line);
+    border-radius:7px; background:var(--bg); color:var(--ink); }
+  .chk { display:flex; align-items:center; gap:8px; margin:10px 0 0; font-size:12px; }
+  .chk input { width:16px; height:16px; accent-color:var(--accent); }
+  .btns { display:flex; gap:8px; margin-top:14px; }
+  .btns button {
+    flex:1; padding:8px 6px; border:1px solid var(--line); background:#fafafa;
+    border-radius:8px; cursor:pointer; font-size:12px;
+  }
+  .btns button:hover { border-color:var(--accent); color:var(--accent); }
+  .index-breakdown {margin-top:12px;display:grid;gap:8px}
+  .idx-row {font-size:11px}
+  .idx-head {display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+  .idx-track {height:7px;background:#e3e9ef;border-radius:9px;overflow:hidden}
+  .idx-fill {height:100%;background:#1763ff;border-radius:9px}
+  .system-extra {border:1px solid var(--line);border-radius:8px;padding:3px 9px;margin:8px 0;background:var(--bg)}
+  .analysis-panel {margin:12px 0;padding:13px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:12px;line-height:1.55;}
+  .analysis-panel h3 {font-size:13px;margin:2px 0 8px;} .analysis-panel p{margin:5px 0;} .analysis-panel strong{font-weight:700;}
+  .note { margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); color:var(--mut); font-size:11px; line-height:1.45; }
+  .advisor { margin-top:10px; padding:12px; background:var(--bg); border:1px solid var(--line); border-radius:9px; font-size:12px; line-height:1.5; }
+  .advisor strong {font-size:12px;} .advisor p {margin:7px 0;} .advisor ul {padding-left:18px;margin:8px 0;} .advisor li {margin:5px 0;} .advisor .muted {color:var(--mut);font-size:11px;} 
+  .advisor button {padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);cursor:pointer;} 
 
-Carbon to Silicon
-Fassadensysteme · Fenster / Erker / Loggia · Straßenraum
-Grundstücksbreite
-9.0 m
-Grundstückstiefe
-16.0 m
-Traufhöhe
-12.0 m
-01 · NUTZUNG UND RÄUMLICHE ABSICHT
-NutzungWohnenBüroMischnutzung
-Was soll die Fassade ermöglichen?
-Möglichkeiten vorschlagen
-Entwurfsberatung
-Beschreiben Sie Ihr Ziel. Die Anwendung empfiehlt passende, verfügbare Entscheidungen, ohne den Entwurf automatisch zu ändern.
-02 · FASSADENSYSTEM
-Konstruktives Prinzip
-    VHF · hinterlüftete BekleidungMauerwerksfassadeVorhangfassade
-    WDVS · PutzBetonfertigteileSandwichpaneele
-    DoppelfassadeSonderfassade · Begrünung
-  
+  #stats {
+    position:fixed; top:16px; right:16px; width:264px; max-width:calc(100vw - 32px);
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,.08); font-size:12px;
+  }
+  #stats h2 { font-size:13px; margin:0 0 2px; }
+  #stats .sub { color:var(--mut); font-size:10px; margin:0 0 8px; }
+  #stats .grp { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:11px 0 3px; }
+  #stats .r { display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
+  #stats .r span:first-child { color:var(--mut); }
+  #stats .r b { font-variant-numeric:tabular-nums; font-weight:600; }
+  #stats .fine { margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); color:var(--mut); font-size:10px; line-height:1.4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17181a; --panel:#1f2124; --ink:#eceef0; --mut:#9aa0a6; --line:#33363a; }
+    .btns button { background:#26282b; }
+  }
+  @media (max-width: 760px) { #stats { position:static; width:auto; margin:8px 16px 0; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
 
-★ = besonders geeignet · ☆ = gut möglich · ○ = mit Einschränkungen. Die Sterne sind konzeptionelle Nutzungsempfehlungen, keine technische Zertifizierung.
-Ausprägung
-GliederungRegelmäßigVertikale BetonungHorizontale BänderExpressiv / gemischt
-Relieftiefe
-45 %
-Vorgehängte hinterlüftete Fassade: schematische Bekleidung vor einer Wandebene; keine bauphysikalische Simulation.
-03 · KIT OF PARTS UND FASSADENREGELN
-StrategieAusgewogenZurückhaltend · PrivatheitStraßenorientiert · Interaktion
-Erker-Anteil
-35 %
-Balkon-Anteil
-15 %
-FensteröffnungFestverglasungDreh-Kipp nach innenIntegrierter LüftungsflügelSchiebefenster (schematisch)Bodentiefe Fenstertür
+<div id="ui">
+  <h1>Carbon&nbsp;to&nbsp;Silicon</h1>
+  <p class="sub">Fassadensysteme · Fenster / Erker / Loggia · Straßenraum</p>
 
-Loggia-Anteil
-20 %
-Öffnungsanteil
-50 %
-HofseiteRuhiger Hof · FensterOffener Hof · größere Fenster
-EingangslageMitteLinksRechts
-A · Privat
-B · Kontakt
-C · Balance
-Die Regeln verändern ein wiederholtes Fassadenraster. Der Eingang kann links, mittig oder rechts liegen; das zugehörige Fassadenfeld bleibt kollisionsfrei. Brandwände bleiben geschlossen; Raumpläne werden nicht generiert.
-04 · AUSWERTUNG UND EXPORT
+  <div class="row">
+    <label>Grundstücksbreite <b><span id="vBreite">9.0</span> m</b></label>
+    <input type="range" id="breite" min="6" max="12" step="0.5" value="9" />
+  </div>
+  <div class="row">
+    <label>Grundstückstiefe <b><span id="vTiefe">16.0</span> m</b></label>
+    <input type="range" id="tiefe" min="10" max="25" step="0.5" value="16" />
+  </div>
+  <div class="row">
+    <label>Traufhöhe <b><span id="vTraufe">12.0</span> m</b></label>
+    <input type="range" id="traufe" min="12" max="18" step="1.5" value="12" />
+  </div>
 
-Straßeninteraktionsindex: geometrisch-konzeptionelle Heuristik, keine bauphysikalische Prüfung.
+  <div class="div">01 · Nutzung und räumliche Absicht</div>
+  <div class="row"><label>Nutzung</label><select id="nutzung"><option value="wohnen">Wohnen</option><option value="buero">Büro</option><option value="misch" selected>Mischnutzung</option></select></div>
+  <div class="row"><label>Was soll die Fassade ermöglichen?</label><textarea id="wunsch" placeholder="z. B. Mehr Ausblick und Kontakt zur Straße, aber ruhige Bereiche zum Hof."></textarea></div>
+  <div class="btns"><button id="interpretieren">Möglichkeiten vorschlagen</button></div>
+  <div id="wunschResult" class="advisor" aria-live="polite"><strong>Entwurfsberatung</strong><p>Beschreiben Sie Ihr Ziel. Die Anwendung empfiehlt passende, verfügbare Entscheidungen, ohne den Entwurf automatisch zu ändern.</p></div>
+  <div class="div">02 · Fassadensystem</div>
+  <div class="row"><label>Konstruktives Prinzip</label><select id="system">
+    <option value="vhf">VHF · hinterlüftete Bekleidung</option><option value="mauerwerk">Mauerwerksfassade</option><option value="vorhang">Vorhangfassade</option>
+    <option value="wdvs">WDVS · Putz</option><option value="beton">Betonfertigteile</option><option value="sandwich">Sandwichpaneele</option>
+    <option value="doppel">Doppelfassade</option><option value="sonder">Sonderfassade · Begrünung</option>
+  </select></div>
+  <div id="useRecommendation" class="advisor" aria-live="polite"></div>
+  <p class="note">★ = besonders geeignet · ☆ = gut möglich · ○ = mit Einschränkungen. Die Sterne sind konzeptionelle Nutzungsempfehlungen, keine technische Zertifizierung.</p>
+  <div class="row"><label>Ausprägung</label><select id="systemVar"></select></div>
+  <div id="curtainControls" class="system-extra" hidden>
+    <div class="row"><label>Profilansichtsbreite <b><span id="vProfile">50</span> mm</b></label><input id="profile" type="range" min="30" max="80" step="5" value="50"></div>
+    <div class="row"><label>Opake Füllungen <b><span id="vOpaque">25</span> %</b></label><input id="opaque" type="range" min="0" max="70" step="5" value="25"></div>
+    <div class="row"><label>Sonnenschutz</label><select id="shade"><option value="none">Ohne</option><option value="vertical">Vertikale Lamellen</option><option value="horizontal">Horizontale Lamellen</option></select></div>
+  </div>
+  <div class="row"><label>Gliederung</label><select id="pattern"><option value="regular">Regelmäßig</option><option value="vertical">Vertikale Betonung</option><option value="horizontal">Horizontale Bänder</option><option value="expressive">Expressiv / gemischt</option></select></div>
+  <div class="row"><label>Relieftiefe <b><span id="vRelief">45</span> %</b></label><input id="relief" type="range" min="10" max="90" step="5" value="45"></div>
+  <p class="note" id="systemInfo">Vorgehängte hinterlüftete Fassade: schematische Bekleidung vor einer Wandebene; keine bauphysikalische Simulation.</p>
+  <div class="div">03 · Kit of Parts und Fassadenregeln</div>
+  <div class="row"><label>Strategie</label><select id="strategie"><option value="balance">Ausgewogen</option><option value="privat">Zurückhaltend · Privatheit</option><option value="kontakt">Straßenorientiert · Interaktion</option></select></div>
+  <div class="row"><label>Erker-Anteil <b><span id="vErker">35</span> %</b></label><input id="erker" type="range" min="0" max="80" step="5" value="35"></div>
+  <div class="row"><label>Balkon-Anteil <b><span id="vBalkon">15</span> %</b></label><input id="balkon" type="range" min="0" max="60" step="5" value="15"></div>
+  <div class="row"><label>Fensteröffnung</label><select id="windowMode"><option value="fixed">Festverglasung</option><option value="inward">Dreh-Kipp nach innen</option><option value="integrated">Integrierter Lüftungsflügel</option><option value="sliding">Schiebefenster (schematisch)</option><option value="french">Bodentiefe Fenstertür</option></select></div>
+  <p id="compatibilityNote" class="note" aria-live="polite"></p>
+  <div class="row"><label>Loggia-Anteil <b><span id="vLoggia">20</span> %</b></label><input id="loggia" type="range" min="0" max="70" step="5" value="20"></div>
+  <div class="row"><label>Öffnungsanteil <b><span id="vOpen">50</span> %</b></label><input id="open" type="range" min="25" max="80" step="5" value="50"></div>
+  <div class="row"><label>Hofseite</label><select id="hof"><option value="ruhig">Ruhiger Hof · Fenster</option><option value="offen">Offener Hof · größere Fenster</option></select></div>
+  <div class="row"><label>Eingangslage</label><select id="doorPos"><option value="mitte" selected>Mitte</option><option value="links">Links</option><option value="rechts">Rechts</option></select></div>
+  <div class="btns"><button id="varA">A · Privat</button><button id="varB">B · Kontakt</button><button id="varC">C · Balance</button></div>
+  <p class="note">Die Regeln verändern ein wiederholtes Fassadenraster. Der Eingang kann links, mittig oder rechts liegen; das zugehörige Fassadenfeld bleibt kollisionsfrei. Brandwände bleiben geschlossen; Raumpläne werden nicht generiert.</p>
+  <div class="div">04 · Auswertung und Export</div>
+  <p id="modulSummary" class="note"></p>
+  <div id="indexBreakdown" class="index-breakdown" aria-live="polite"></div>
+  <p id="indexExplain" class="note">Straßeninteraktionsindex: geometrisch-konzeptionelle Heuristik, keine bauphysikalische Prüfung.</p>
+  <p id="indexComment" class="note"></p>
+  <div id="fassadenAnalyse" class="analysis-panel" aria-live="polite"></div>
+  <div class="div">Ansicht / Kamera</div>
+  <div class="btns"><button id="viewStreet" type="button">Straßenansicht</button><button id="viewCourt" type="button">Hofansicht</button><button id="view3d" type="button">3D-Übersicht</button></div>
+  <p class="note">Die Fassadenansichten blicken frontal auf die jeweilige Fassade (perspektivische Kamera). Mit der Maus bleiben Drehung und Zoom möglich.</p>
+  <div class="div">Umgebung</div>
+  <div class="row">
+    <label>Straßenbreite <b><span id="vStrasse">12</span> m</b></label>
+    <input type="range" id="strasse" min="10" max="20" step="1" value="12" />
+  </div>
 
+  <div class="div">Sonnenstand (Mainz, 50° N)</div>
+  <div class="row">
+    <label>Tageszeit <b><span id="vHour">12:00</span></b></label>
+    <input type="range" id="hour" min="5" max="21" step="0.25" value="12" />
+  </div>
+  <div class="row">
+    <label>Jahreszeit</label>
+    <select id="season">
+      <option value="-23.45">Winter (21.12.)</option>
+      <option value="0" selected>Tag-/Nachtgleiche (21.3./23.9.)</option>
+      <option value="23.45">Sommer (21.6.)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Nordrichtung <b><span id="vNord">0</span>°</b></label>
+    <input type="range" id="nord" min="0" max="345" step="15" value="0" />
+  </div>
+  <label class="chk"><input type="checkbox" id="sunpath" checked /> Sonnenbahn &amp; Schatten anzeigen</label>
 
-ANSICHT / KAMERA
-Straßenansicht
-Hofansicht
-3D-Übersicht
-Die Fassadenansichten blicken frontal auf die jeweilige Fassade (perspektivische Kamera). Mit der Maus bleiben Drehung und Zoom möglich.
-UMGEBUNG
-Straßenbreite
-12 m
-SONNENSTAND (MAINZ, 50° N)
-Tageszeit
-12:00
-Jahreszeit
-      Winter (21.12.)
-      Tag-/Nachtgleiche (21.3./23.9.)
-      Sommer (21.6.)
-    
-Nordrichtung
-0°
+  <div class="btns">
+    <button id="expObj">Export .obj</button>
+    <button id="expGltf">Export .glTF</button>
+  </div>
 
-Sonnenbahn & Schatten anzeigen
-Export .obj
-Export .glTF
-Grauer Kontext (Blockrand mit Innenhof, Nachbarn) und das blaue bebaubare Volumen sind vorgegeben. Ihr Konfigurator entsteht in buildKonfigurator(), Ihr eigenes Kriterium in eigenesKriterium() – siehe markierte Zonen im Code.  Dieses UI dürfen Sie frei anpassen. Zusätzliche Darstellungen und Auswertungen des Modells (Schnitte, Pläne, weitere Kennwerte …) sind ausdrücklich erwünscht.
-Auswertung
-Geometrische Näherungen aus der vereinfachten Gebäudehülle
-MASSENKENNWERTE · NÄHERUNG
-BRI (Volumen)
-– m³
-BGF
-– m²
-Grundfläche
-– m²
-PLANUNGSKENNWERTE
-Geschosse
-–
-GRZ
-–
-GFZ
-–
-ÖKOLOGISCH / ÖKONOMISCH
-A/V-Verhältnis
-– 1/m
-CO₂ (geschätzt)
-– t
-Kosten (geschätzt)
-–
-EIGENES KRITERIUM
-(noch zu definieren)
-–
-Die Kennwerte beziehen sich auf eine vereinfachte Grundstücks-Referenzhülle (Breite × Grundstückstiefe × Traufhöhe), nicht auf die eingerückte und gegliederte Modellgeometrie. BGF, BRI, GRZ und GFZ sind deshalb didaktische Obergrenzen/Referenzwerte; Erker, Balkone und Loggien werden nicht normgerecht bilanziert. CO₂ und Kosten = BGF × didaktischer Platzhalterfaktor (im Code anpassbar). Netto-Flächen (NUF/VF/TF) sind auf Massenebene nicht ableitbar.
+  <p class="note">
+    Grauer Kontext (Blockrand mit Innenhof, Nachbarn) und das blaue bebaubare Volumen sind vorgegeben.
+    Ihr Konfigurator entsteht in <code>buildKonfigurator()</code>, Ihr eigenes Kriterium in
+    <code>eigenesKriterium()</code> – siehe markierte Zonen im Code.<br><br>
+    <b>Dieses UI dürfen Sie frei anpassen.</b> Zusätzliche Darstellungen und Auswertungen des
+    Modells (Schnitte, Pläne, weitere Kennwerte …) sind ausdrücklich erwünscht.
+  </p>
+</div>
+
+<div id="stats">
+  <h2>Auswertung</h2>
+  <p class="sub">Geometrische Näherungen aus der vereinfachten Gebäudehülle</p>
+  <div class="grp">Massenkennwerte · Näherung</div>
+  <div class="r"><span>BRI (Volumen)</span><b><span id="sBRI">–</span> m³</b></div>
+  <div class="r"><span>BGF</span><b><span id="sBGF">–</span> m²</b></div>
+  <div class="r"><span>Grundfläche</span><b><span id="sGRF">–</span> m²</b></div>
+  <div class="grp">Planungskennwerte</div>
+  <div class="r"><span>Geschosse</span><b><span id="sGesch">–</span></b></div>
+  <div class="r"><span>GRZ</span><b><span id="sGRZ">–</span></b></div>
+  <div class="r"><span>GFZ</span><b><span id="sGFZ">–</span></b></div>
+  <div class="grp">Ökologisch / Ökonomisch</div>
+  <div class="r"><span>A/V-Verhältnis</span><b><span id="sAV">–</span> 1/m</b></div>
+  <div class="r"><span>CO₂ (geschätzt)</span><b><span id="sCO2">–</span> t</b></div>
+  <div class="r"><span>Kosten (geschätzt)</span><b><span id="sKost">–</span></b></div>
+  <div class="grp">Eigenes Kriterium</div>
+  <div class="r"><span id="sEigenLbl">(noch zu definieren)</span><b><span id="sEigenVal">–</span></b></div>
+  <p class="fine">Die Kennwerte beziehen sich auf eine vereinfachte Grundstücks-Referenzhülle (Breite × Grundstückstiefe × Traufhöhe), nicht auf die eingerückte und gegliederte Modellgeometrie. BGF, BRI, GRZ und GFZ sind deshalb didaktische Obergrenzen/Referenzwerte; Erker, Balkone und Loggien werden nicht normgerecht bilanziert. CO₂ und Kosten = BGF × didaktischer Platzhalterfaktor (im Code anpassbar). Netto-Flächen (NUF/VF/TF) sind auf Massenebene nicht ableitbar.</p>
+</div>
+
+<!-- three.js (feste Version, kein Build-Schritt) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OBJExporter }   from 'three/addons/exporters/OBJExporter.js';
+import { GLTFExporter }  from 'three/addons/exporters/GLTFExporter.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ------------------------------------------------------------------
+//  GRUNDGERÜST  –  nicht verändern nötig (dürfen Sie aber)
+// ------------------------------------------------------------------
+const DEG = Math.PI / 180;
+const LAT = 50.0;   // Breitengrad Mainz (für den Sonnenstand)
+const R_DOME = 42;  // Radius der Sonnenbahn-Kuppel
+
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+const DARK = matchMedia('(prefers-color-scheme: dark)').matches;
+scene.background = new THREE.Color(DARK ? 0x17181a : 0xdfe3e8);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1000);
+camera.position.set(30, 30, -24); // erhöhte Schrägansicht: Baulücke + Blockrand/Innenhof
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Zweiter Renderer für Maß-Beschriftungen (HTML-Labels im 3D-Raum)
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position = 'fixed';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+app.appendChild(labelRenderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa0a6, 0.7));
+const sun = new THREE.DirectionalLight(0xfff4e6, 1.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { near: 1, far: 220, left: -70, right: 70, top: 70, bottom: -70 });
+scene.add(sun, sun.target);
+
+// Sonnen-Marker (Kugel am aktuellen Sonnenstand)
+const sunMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(1.3, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xffce3b })
+);
+scene.add(sunMarker);
+
+// Gruppen: Kontext (vorgegeben) + Konfigurator (Ihr Ergebnis) + Sonnenbahn
+const kontextGruppe = new THREE.Group();
+const konfiguratorGruppe = new THREE.Group();
+const sonneGruppe = new THREE.Group();
+const masseGruppe = new THREE.Group();
+scene.add(kontextGruppe, konfiguratorGruppe, sonneGruppe, masseGruppe);
+
+// Parameter (werden von den Bedienelementen gesetzt)
+const P = { breite: 9, tiefe: 16, traufe: 12, strasse: 12, hour: 12, decl: 0, nord: 0, sunPath: true, nutzung:"misch", system:"vhf", systemVar:"holz", profile:50, opaque:25, shade:"none", pattern:"regular", relief:45, strategie:"balance", erker:35, balkon:15, windowMode:"inward", loggia:20, open:50, hof:"ruhig", doorPos:"mitte" };
+let fassadeStat = {fenster:0,erker:0,loggia:0,balkon:0,ground:0,levels:4,streetGlassArea:0,courtGlassArea:0,streetFacadeArea:1,courtFacadeArea:1,entryWidth:0,moduleDepthSum:0,modules:0};
+
+// Umgebungsmaße des Dummy-Blockrands (Straßenbreite ist über P.strasse regelbar)
+const BLOCK_W = 70;    // Blockbreite (m)
+const SIDE_BT = 13;    // Tiefe seitlicher Blockränder (m)
+const HOF = 24;        // Innenhof-Tiefe (m)
+const REAR_BT = 15;    // Tiefe rückwärtiger Blockrand (m)
+
+const center = () => new THREE.Vector3(0, P.traufe / 2, P.tiefe / 2);
+
+// ------------------------------------------------------------------
+//  KONTEXT  –  Baulücke + großzügige Umgebung (vorgegeben & verbindlich)
+//  X = Breite (Straßenfront), Z = Tiefe (0 = Straße), Y = Höhe
+//  Standard-Orientierung: Straße zeigt nach Süden (per Nordrichtung drehbar)
+// ------------------------------------------------------------------
+function box(w, h, d, x, z, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, h / 2, z);
+  m.castShadow = true; m.receiveShadow = true;
+  kontextGruppe.add(m);
+  return m;
+}
+
+function buildKontext() {
+  kontextGruppe.clear();
+  const { breite, tiefe, traufe } = P;
+
+  const grau    = new THREE.MeshStandardMaterial({ color: 0xc2c2bd, roughness: 0.95 });
+  const grauDkl = new THREE.MeshStandardMaterial({ color: 0xacaca6, roughness: 0.95 });
+  const wand    = new THREE.MeshStandardMaterial({ color: 0xd2d2cc, roughness: 1, side: THREE.DoubleSide });
+
+  // Boden (empfängt Schatten)
+  const boden = new THREE.Mesh(new THREE.PlaneGeometry(160, 160),
+    new THREE.MeshStandardMaterial({ color: 0xe7e7e2, roughness: 1 }));
+  boden.rotation.x = -Math.PI / 2; boden.position.set(0, 0, tiefe / 2); boden.receiveShadow = true;
+  kontextGruppe.add(boden);
+
+  // Straße (vor dem Grundstück, Z < 0)
+  const strasse = new THREE.Mesh(new THREE.PlaneGeometry(160, P.strasse),
+    new THREE.MeshStandardMaterial({ color: 0xbfbfb9, roughness: 1 }));
+  strasse.rotation.x = -Math.PI / 2; strasse.position.set(0, 0.01, -P.strasse / 2); strasse.receiveShadow = true;
+  kontextGruppe.add(strasse);
+
+  // --- Blockrand als NICHT-überlappende Segmente mit variierten Höhen ---
+  //     Partition statt Überlappung: gemeinsame Flächen liegen im Inneren der
+  //     Masse (verdeckt) -> kein Z-Fighting/Flackern. Die Flanken der
+  //     Baulücken-Öffnung sind zugleich die Brandwände.
+  const BW = BLOCK_W, sideBt = SIDE_BT, hof = HOF, rearBt = REAR_BT, T = traufe;
+  const oz1 = tiefe + hof + rearBt, ox = BW / 2, ix = BW / 2 - sideBt;
+  const cz1 = oz1 - rearBt, g = breite / 2;
+  const bx = (x0, x1, z0, z1, h, mat) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, h, z1 - z0), mat);
+    m.position.set((x0 + x1) / 2, h / 2, (z0 + z1) / 2);
+    m.castShadow = true; m.receiveShadow = true; kontextGruppe.add(m);
+  };
+  // seitliche Blockränder (über die volle Blocktiefe)
+  bx(-ox, -ix, 0, oz1, T * 1.05, grauDkl);
+  bx( ix,  ox, 0, oz1, T * 0.95, grauDkl);
+  // rückwärtiger Blockrand
+  bx(-ix,  ix, cz1, oz1, T * 1.10, grau);
+  // Straßenfront: je zwei Nachbarn links/rechts der Baulücke (variierte Höhen)
+  const xmL = -(g + ix) / 2, xmR = (g + ix) / 2;
+  bx(-ix, xmL, 0, tiefe, T * 1.10, grau);
+  bx(xmL,  -g, 0, tiefe, T * 0.85, grauDkl);
+  bx(  g, xmR, 0, tiefe, T * 0.85, grauDkl);
+  bx(xmR,  ix, 0, tiefe, T * 1.10, grau);
+
+  // Innenhof-Fläche (nur zur Lesbarkeit eingefärbt)
+  const hofFl = new THREE.Mesh(new THREE.PlaneGeometry(BW - 2 * sideBt, hof),
+    new THREE.MeshStandardMaterial({ color: 0xd7e0d2, roughness: 1 }));
+  hofFl.rotation.x = -Math.PI / 2; hofFl.position.set(0, 0.02, tiefe + hof / 2); hofFl.receiveShadow = true;
+  kontextGruppe.add(hofFl);
+
+  // Gegenüberliegende Straßenseite (geschlossene Blockkante, variierte Höhen)
+  const oppH = [14, 17, 13, 16, 15];
+  for (let i = 0; i < 5; i++) box(14, oppH[i], 14, -28 + i * 14, -(P.strasse + 7), i % 2 ? grau : grauDkl);
+
+  // Bebaubares Volumen (Draht-Envelope)
+  const env = new THREE.Mesh(new THREE.BoxGeometry(breite, traufe, tiefe),
+    new THREE.MeshBasicMaterial({ wireframe: true, color: 0x1763ff }));
+  env.position.set(0, traufe / 2, tiefe / 2); kontextGruppe.add(env);
+
+  controls.target.copy(center());
+}
+
+// ==================================================================
+//  === HIER BEGINNT IHR KONFIGURATOR: Kit of Parts + Regeln ===
+//
+//  Bauen Sie Ihre Geometrie aus Ihrem selbst definierten Bauteil-
+//  Vokabular nach Ihren Regeln in "konfiguratorGruppe" hinein.
+//  Die Funktion wird bei jeder Parameteränderung neu aufgerufen.
+//
+//  Das Folgende ist nur ein PLATZHALTER – bitte ersetzen.
+// ==================================================================
+function buildKonfigurator() {
+  konfiguratorGruppe.clear();
+  // Das bebaute Fassadenmodell bleibt vollständig innerhalb der Grundstücksgrenzen.
+  // Beidseitig 1,75 m Sicherheitsabstand für Erker/Balkone und Laibungen.
+  // P.tiefe bleibt die Grundstücks- und Referenzhüllentiefe für die Kennzahlen.
+  konfiguratorGruppe.position.z=1.75;
+  const w=P.breite, d=P.tiefe-3.50, floors=Math.max(4,Math.min(6,Math.round(P.traufe/3)));
+  const h=P.traufe/floors, bays=Math.max(3,Math.round(w/2.5)), bw=w/bays;
+  const paletteSets={
+   vhf:{holz:[0xc59a71,0x715b4a,0x263d45],metall:[0x98a2ab,0x626f79,0x27323b],keramik:[0xb97558,0x834f43,0x2d3940],naturstein:[0xb8b0a2,0x877d71,0x324148]},
+   mauerwerk:{ziegelrot:[0xa9634c,0x8c5141,0x2e373c],klinker:[0x7d4337,0x5d3029,0x263238],hell:[0xc89c79,0x986f56,0x39464d],stein:[0xb2a493,0x807261,0x314047]},
+   vorhang:{klar:[0x607c88,0x344b54,0x253b45],spandrel:[0x748894,0x52656f,0x2a3941],vertikal:[0x6b8790,0x3c5560,0x21323a]},
+   wdvs:{hell:[0xe6ddd0,0xb9aa96,0x364b53],warm:[0xd9c9b7,0xaa937a,0x39464d],mineralisch:[0xd2d2cb,0xa0a198,0x374147]},
+   beton:{glatt:[0xbbbcb7,0x868c8b,0x32434a],gerillt:[0xadb1ae,0x777f7e,0x2f4047],brett:[0xb1ada7,0x7c766e,0x314149]},
+   sandwich:{vertikal:[0x8b999a,0x526769,0x2e4149],horizontal:[0x94a1a3,0x5b7073,0x314247],mikrorippe:[0x98a6a7,0x66787a,0x324449]},
+   doppel:{klar:[0x94a9b2,0x5b7580,0x34515d],lamellen:[0x9eb2bb,0x708691,0x37535e],wintergarten:[0xa7bbc5,0x778d97,0x38545f]},
+   sonder:{begruenung:[0x8aa284,0x587254,0x344a44],pv:[0x617887,0x3c5562,0x23323b],adaptiv:[0x9b9f93,0x6e7369,0x39443f]}
+  };
+  const group=paletteSets[P.system]||paletteSets.vhf;
+  const pal=group[P.systemVar]||Object.values(group)[0];
+  const wallMat=new THREE.MeshStandardMaterial({color:pal[0],roughness:.78});
+  const accent=new THREE.MeshStandardMaterial({color:pal[1],roughness:.72});
+  const frame=new THREE.MeshStandardMaterial({color:pal[2],metalness:.35,roughness:.32});
+  const glass=new THREE.MeshPhysicalMaterial({color:0x9cc9da,metalness:.05,roughness:.12,transparent:true,opacity:.73,side:THREE.DoubleSide});
+  const roof=new THREE.MeshStandardMaterial({color:0x5e6865,roughness:.9});
+  const vegetation=new THREE.MeshStandardMaterial({color:0x4e8454,roughness:1});
+  function cub(x,y,z,wx,hy,dz,mat){
+    // Trim seam overlaps only at the global permitted height limits.
+    const lo=Math.max(0,y-hy/2),hi=Math.min(P.traufe,y+hy/2);
+    if(hi-lo<=.000001)return;
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(wx,hi-lo,dz),mat);
+    mesh.position.set(x,(lo+hi)/2,z);mesh.castShadow=true;mesh.receiveShadow=true;
+    konfiguratorGruppe.add(mesh);return mesh;
+  }
+  // Conceptual interior envelope: no fake floor plan or staircase.
+  const inner=new THREE.MeshStandardMaterial({color:0xe4e0d7,roughness:1});
+  cub(-w/2+.10,P.traufe/2,d/2,.20,P.traufe,d,inner);
+  cub(w/2-.10,P.traufe/2,d/2,.20,P.traufe,d,inner);
+  cub(0,P.traufe-.10,d/2,w,.20,d,roof);
+  for(let floor=0;floor<floors;floor++) cub(0,floor*h+.11,d/2,w,.22,d,inner);
+  fassadeStat={fenster:0,erker:0,loggia:0,balkon:0,ground:0,levels:floors,streetGlassArea:0,courtGlassArea:0,streetFacadeArea:w*P.traufe,courtFacadeArea:w*P.traufe,entryWidth:0,moduleDepthSum:0,modules:0};
+  const reliefScale=P.relief/100;
+  const doorBay=P.doorPos==='links'?bays-1:P.doorPos==='rechts'?0:Math.floor(bays/2);
+  // Each module has a wall pier, glass infill and an optional habitable threshold.
+  function panel(x,y,z,front,kind,level,bay){
+    const edge=0.08, face=front?-1:1, depth=front?0.10:0.12;
+    const projectionBase=.25+.55*reliefScale;
+    let glassWidth=bw*Math.min(.78,P.open/100+.15);
+    const isAccess=kind==='BALKON'||kind==='LOGGIA'||P.windowMode==='french';
+    // Windows follow a real opening envelope: lower parapet and head always
+    // meet the sash, rather than leaving the light-coloured voids in the screenshots.
+    const windowHeight=isAccess?Math.min(h-.36,2.38):h*Math.min(.68,.37+P.open/250);
+    const baseY=isAccess?y+.22:y+(h-windowHeight)/2;
+    const centerZ=z+face*(kind==='ERKER'?(0.30+projectionBase*.5):kind==='LOGGIA'?-(0.24+reliefScale*.30):0);
+    const solidZ=z+face*.03;
+    const side=(bw-glassWidth)/2;
+    const sill=Math.max(0,baseY-y), head=Math.max(0,y+h-(baseY+windowHeight));
+    // Explicitly measure the openings actually generated by the geometry.
+    const effectiveGlass=Math.max(0,glassWidth-.10)*Math.max(0,windowHeight-.10);
+    if(front){
+      fassadeStat.streetGlassArea+=effectiveGlass;
+      fassadeStat.modules++;
+      if(kind==='ERKER'||kind==='LOGGIA'||kind==='BALKON') fassadeStat.moduleDepthSum+=kind==='BALKON'?(.65+reliefScale*.50):Math.abs(centerZ-z);
+    }else fassadeStat.courtGlassArea+=effectiveGlass;
+    cub(x-bw/2+side/2,y+h/2,solidZ,side,h,depth,wallMat);
+    cub(x+bw/2-side/2,y+h/2,solidZ,side,h,depth,wallMat);
+    if(sill>.005) cub(x,y+sill/2,solidZ,glassWidth,sill+.022,depth,wallMat);
+    if(head>.005) cub(x,baseY+windowHeight+head/2,solidZ,glassWidth,head+.022,depth,wallMat);
+    // Close the complete recess/projection in 3D, not just its face.
+    // Every opening receives two side reveals, a bottom sill and a top soffit.
+    // Without these closures, the camera can see into the empty schematic shell
+    // from an oblique angle (especially at Loggien and projecting Erker).
+    const facadePlane=solidZ+face*depth*.5;
+    const glazingPlane=centerZ;
+    const revealDepth=Math.abs(glazingPlane-facadePlane)+.055;
+    const revealMid=(facadePlane+glazingPlane)/2;
+    const revealThickness=.085;
+    if(revealDepth>.085){
+      const leftEdge=x-glassWidth/2, rightEdge=x+glassWidth/2;
+      for(const xx of [leftEdge,rightEdge]){
+        cub(xx,baseY+windowHeight/2,revealMid,revealThickness,windowHeight+.08,revealDepth,wallMat);
+      }
+      cub(x,baseY-.032,revealMid,glassWidth+.08,.075,revealDepth,accent);
+      cub(x,baseY+windowHeight+.034,revealMid,glassWidth+.08,.077,revealDepth,wallMat);
+    }
+    // Continuous exterior head strip connected to wall and frame.
+    cub(x,baseY+windowHeight+.028,solidZ+face*.013,glassWidth+.10,.055,depth+.025,accent);
+    if(kind==='ERKER'){
+      const projection=.28+projectionBase*.55;
+      cub(x,baseY-.08,(z+centerZ)/2,glassWidth,.17,projection,accent);
+      cub(x,baseY+windowHeight+.07,(z+centerZ)/2,glassWidth,.14,projection,accent);
+      cub(x-glassWidth/2+.045,baseY+windowHeight/2,(z+centerZ)/2,.09,windowHeight,projection,accent);
+      cub(x+glassWidth/2-.045,baseY+windowHeight/2,(z+centerZ)/2,.09,windowHeight,projection,accent);
+    }
+    if(kind==='BALKON' && front){
+      const bwid=Math.min(bw*.82,2.2), proj=.65+reliefScale*.50;
+      const bz=z-proj/2-.04;
+      cub(x,y+.17,bz,bwid,.15,proj,accent);
+      const outerZ=z-proj-.06, innerZ=z-.10;
+      // Three-sided balcony guard: front + both returns; the return railings
+      // connect continuously to the wall instead of floating at the edge.
+      cub(x,y+1.12,outerZ,bwid,.07,.08,frame);
+      for(const xx of [x-bwid/2+.035,x+bwid/2-.035]){
+        cub(xx,y+.69,outerZ,.065,.88,.08,frame);
+        cub(xx,y+1.12,(outerZ+innerZ)/2,.07,.07,Math.abs(innerZ-outerZ)+.05,frame);
+        for(let q=1;q<=3;q++){
+          const zz=outerZ+(innerZ-outerZ)*q/4;
+          cub(xx,y+.69,zz,.045,.88,.045,frame);
+        }
+      }
+      for(let r=-1;r<=1;r++)cub(x+r*bwid*.22,y+.69,outerZ,.027,.87,.05,frame);
+      cub(x,y+.48,z-.07,glassWidth*.82,.04,.08,frame);
+    }
+    if(kind==='LOGGIA'){
+      // Recessed opening: transparent balcony door and a shallow rail on the outer plane.
+      cub(x,baseY-.04,z+face*.01,glassWidth,.10,.18,accent);
+      cub(x,baseY+.43,z+face*.05,glassWidth,.07,.10,frame);
+      cub(x-glassWidth/2,baseY+.47,z+face*.05,.05,.9,.09,frame);
+      cub(x+glassWidth/2,baseY+.47,z+face*.05,.05,.9,.09,frame);
+    }
+    cub(x,baseY+windowHeight/2,centerZ,glassWidth-.10,windowHeight-.10,.035,glass);
+    cub(x,baseY+windowHeight/2,centerZ,glassWidth,.065,.08,frame);
+    cub(x,baseY+.035,centerZ,glassWidth,.07,.08,frame);
+    cub(x,baseY+windowHeight-.035,centerZ,glassWidth,.07,.08,frame);
+    cub(x-glassWidth/2,baseY+windowHeight/2,centerZ,.065,windowHeight,.08,frame);
+    cub(x+glassWidth/2,baseY+windowHeight/2,centerZ,.065,windowHeight,.08,frame);
+    // Sash types are schematic, but distinguish fixed, tilt-turn, sliding,
+    // integrated ventilators and floor-height glazing in the actual model.
+    let mode=(kind==='BALKON'||kind==='LOGGIA')?'french':P.windowMode;
+    // System-dependent simplification: incompatible opening types are suppressed in the geometry itself.
+    if(P.system==='doppel') mode='fixed';
+    if(P.system==='vorhang' && P.systemVar==='vertikal') mode='fixed';
+    if(P.system==='vorhang' && P.systemVar==='spandrel' && (mode==='french' || mode==='inward')) mode='fixed';
+    if(P.system==='sandwich' && (mode==='sliding' || mode==='french' || mode==='integrated')) mode='fixed';
+    if((P.system==='beton' || P.system==='wdvs') && kind==='LOGGIA' && mode==='integrated') mode='french';
+    if(mode==='inward'){
+      cub(x+glassWidth*.24,baseY+windowHeight/2,centerZ+face*.041,.042,windowHeight-.17,.045,frame);
+      cub(x+glassWidth*.10,baseY+windowHeight*.49,centerZ+face*.071,.024,.16,.026,accent);
+    } else if(mode==='integrated'){
+      cub(x,baseY+windowHeight*.76,centerZ+face*.046,glassWidth-.11,.045,.055,frame);
+      cub(x+glassWidth*.25,baseY+windowHeight*.87,centerZ+face*.046,.04,windowHeight*.23,.055,frame);
+    } else if(mode==='sliding'){
+      cub(x,baseY+windowHeight/2,centerZ+face*.055,.056,windowHeight-.14,.07,frame);
+      cub(x-glassWidth*.21,baseY+windowHeight*.47,centerZ+face*.10,.025,.12,.025,accent);
+    } else if(mode==='french'){
+      cub(x,baseY+windowHeight/2,centerZ+face*.065,.06,windowHeight-.15,.055,frame);
+      cub(x+glassWidth*.20,baseY+windowHeight*.43,centerZ+face*.095,.035,.18,.03,accent);
+    }
+    if(P.system==='vorhang'){
+      const thick=P.systemVar==='vertikal'?.027:P.profile/1000;
+      const mullionDepth=P.systemVar==='spandrel'?.13:.085;
+      // Three original, schematic languages informed by general curtain-wall principles.
+      cub(x-bw*.47,y+h*.5,z+face*.15,thick,h-.08,mullionDepth,frame);
+      if(P.systemVar==='klar'){
+        cub(x,baseY+windowHeight*.5,z+face*.14,glassWidth,thick,mullionDepth,frame);
+      } else if(P.systemVar==='spandrel'){
+        cub(x,y+h*.80,z+face*.12,bw*.84,h*.20,.055,accent);
+        cub(x-bw*.38,y+h*.50,z+face*.14,thick,h-.07,.10,frame);
+        cub(x+bw*.38,y+h*.50,z+face*.14,thick,h-.07,.10,frame);
+      } else {
+        cub(x,baseY+windowHeight*.5,z+face*.16,glassWidth,.018,.040,frame);
+      }
+      if(P.opaque>0){
+        const oh=Math.min(h*.36,h*.55*P.opaque/100);
+        cub(x,y+h-oh/2,z+face*.125,bw*.72,oh,.038,accent);
+      }
+      if(front && P.shade==='vertical') for(let q=-1;q<=1;q++)cub(x+q*bw*.21,y+h*.53,z+face*.40,.055,h*.63,.17,accent);
+      if(front && P.shade==='horizontal') for(let q=0;q<3;q++)cub(x,y+h*(.35+q*.19),z+face*.38,bw*.80,.045,.22,accent);
+    }
+    if(P.system==='doppel'){
+      cub(x,y+h/2,z+face*.16,.035,h-.08,.05,frame);
+      if(P.system==='doppel')cub(x,y+h/2,z+face*.29,bw*.76,h*.72,.018,new THREE.MeshPhysicalMaterial({color:0xb4d5da,transparent:true,opacity:.19,side:THREE.DoubleSide}));
+    }
+    if(P.system==='sonder' && (bay+level)%2===0){
+      cub(x-bw*.31,y+h*.5,z+face*.18,.10,h*.64,.10,vegetation);
+      cub(x+bw*.31,y+h*.5,z+face*.18,.10,h*.64,.10,vegetation);
+    }
+    if(P.system==='beton' || P.system==='sandwich') cub(x,y+h-.055,z+face*.085,bw-.025,.035,.05,accent);
+    if(P.system==='mauerwerk' || P.system==='vhf'){
+      // Renderable module joints communicate the facade system without claiming a real detail.
+      cub(x-bw/2+.015,y+h/2,z+face*.082,.028,h-.03,.025,accent);
+      cub(x+bw/2-.015,y+h/2,z+face*.082,.028,h-.03,.025,accent);
+      if(P.pattern==='horizontal') cub(x,y+h-.035,z+face*.09,bw-.04,.028,.03,accent);
+    }
+    if(P.pattern==='vertical' && front) cub(x-bw*.47,y+h/2,z+face*.095,.022,h-.04,.028,accent);
+    if(P.pattern==='expressive' && front && kind==='ERKER') cub(x,y+h-.035,z+face*.11,bw*.42,.03,.04,accent);
+  }
+  function entrancePanel(x,y,z){
+    const face=-1;
+    // The entrance bay replaces, rather than overlays, a window or opaque wall.
+    const dw=Math.min(1.35,bw*.56), dh=Math.min(2.35,h*.78);
+    const side=(bw-dw)/2;
+    cub(x-bw/2+side/2,y+h/2,z-.045,side,h,.06,wallMat);
+    cub(x+bw/2-side/2,y+h/2,z-.045,side,h,.06,wallMat);
+    cub(x,y+dh+(h-dh)/2,z-.045,dw,h-dh+.02,.06,wallMat);
+    cub(x,y+dh/2+.08,z-.15,dw-.14,dh-.12,.035,glass);
+    cub(x,y+dh+.10,z-.18,dw,.07,.09,frame);
+    cub(x,y+.07,z-.18,dw,.08,.09,frame);
+    cub(x-dw/2,y+dh/2+.08,z-.18,.07,dh,.09,frame);
+    cub(x+dw/2,y+dh/2+.08,z-.18,.07,dh,.09,frame);
+    cub(x,y+dh+.19,z-.29,dw+.35,.08,.42,accent); // entrance canopy
+    cub(x,y+.045,z-.24,dw+.45,.09,.38,accent); // threshold
+    cub(x+dw*.32,y+1.04,z-.208,.055,.24,.025,frame); // handle
+    fassadeStat.entryWidth=dw;
+    if(P.system==='doppel') cub(x,y+dh/2+.08,z-.28,dw+.08,dh+.05,.02,new THREE.MeshPhysicalMaterial({color:0xb4d5da,transparent:true,opacity:.16,side:THREE.DoubleSide}));
+  }
+  for(let row=0;row<floors;row++){
+   for(let b=0;b<bays;b++){
+    const x=-w/2+bw*(b+.5), y=row*h;
+    const seed=((row*11+b*7+3)%17)/17;
+    const erker=P.strategie==='privat'?P.erker*.65:P.strategie==='kontakt'?P.erker*1.2:P.erker;
+    const loggia=P.strategie==='privat'?P.loggia*.6:P.strategie==='kontakt'?P.loggia*1.45:P.loggia;
+    let kind='FENSTER';
+    if(P.pattern==='vertical') kind=(b%3===1 && row>0)?(seed<.45?'ERKER':'LOGGIA'):(seed<loggia/110?'LOGGIA':seed<(loggia+erker)/115?'ERKER':'FENSTER');
+    else if(P.pattern==='horizontal') kind=(row%2===1 && seed<.7)?'FENSTER':(seed<loggia/100?'LOGGIA':seed<(loggia+erker)/100?'ERKER':'FENSTER');
+    else if(P.pattern==='expressive') kind=(row===floors-1&&seed<.5)?'LOGGIA':(b===1||b===bays-2)?'ERKER':(seed<loggia/95?'LOGGIA':seed<(loggia+erker)/95?'ERKER':'FENSTER');
+    else kind=seed<loggia/100?'LOGGIA':seed<(loggia+erker)/100?'ERKER':'FENSTER';
+    if(row>0 && P.balkon>0 && ['wohnen','misch'].includes(P.nutzung) && ((row*5+b*3+1)%11)/11<P.balkon/100) kind='BALKON';
+    if((P.system==='vorhang' && P.systemVar==='vertikal') || P.system==='doppel') kind='FENSTER';
+    if((P.system==='vorhang' && P.systemVar==='spandrel') || P.system==='sandwich'){ if(kind==='ERKER' || kind==='BALKON' || kind==='LOGGIA') kind='FENSTER'; }
+    if(P.system==='vorhang' && P.systemVar==='klar' && (kind==='BALKON' || kind==='LOGGIA')) kind='FENSTER';
+    if(P.system==='beton' && (kind==='ERKER' && seed>.35 || kind==='BALKON' && seed>.25)) kind='FENSTER';
+    if(P.system==='doppel' && kind==='BALKON') kind='FENSTER';
+    if(row===0 && b===doorBay){
+      entrancePanel(x,y,-.02);
+      fassadeStat.ground++;
+    } else {
+      panel(x,y,-.02,true,kind,row,b);
+      fassadeStat[kind.toLowerCase()]++;
+    }
+    panel(x,y,d+.02,false,P.hof==='offen'&&row>0&&seed<0.25?'LOGGIA':'FENSTER',row,b);
+   }
+  }
+  const info=document.getElementById('modulSummary');
+  if(info) info.textContent=`Straßenfassade: ${fassadeStat.fenster} Fenster · ${fassadeStat.erker} Erker · ${fassadeStat.loggia} Loggien · ${fassadeStat.balkon} Balkone · ${fassadeStat.ground} Eingangsfeld (${P.doorPos}). System: ${document.getElementById('system').selectedOptions[0].textContent} / ${document.getElementById('systemVar').selectedOptions[0]?.textContent||''}. ${floors} Geschosse / ${bays} Achsen.`;
+}
+// ==================================================================
+//  === ENDE IHR KONFIGURATOR ===
+// ==================================================================
+
+// ==================================================================
+//  === IHR EIGENES KRITERIUM (vergleichend) ===
+//
+//  Definieren Sie EIN eigenes, vergleichendes Kriterium – quantifizierbar,
+//  reagiert auf Ihre Parameter/Geometrie, wird begründet (siehe Reflexion).
+//  Geben Sie { label, wert, einheit } zurück; null = noch nicht definiert.
+//  ctx enthält: BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A (Hüllfläche),
+//               breite, tiefe, traufe sowie gruppe (konfiguratorGruppe).
+// ==================================================================
+function eigenesKriterium(ctx) {
+ // This index measures facade interaction, not architectural quality or code compliance.
+ // All opening inputs below come from generated modules, not just sliders.
+ const st=fassadeStat, clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+ const n=Math.max(1,st.fenster+st.erker+st.loggia+st.balkon);
+ const f=st.fenster/n,e=st.erker/n,l=st.loggia/n,b=st.balkon/n;
+ const glassStreet=clamp(st.streetGlassArea/Math.max(1,st.streetFacadeArea));
+ const glassHof=clamp(st.courtGlassArea/Math.max(1,st.courtFacadeArea));
+ const threshold=(st.loggia+st.balkon)/n;
+ const depthMean=st.moduleDepthSum/Math.max(1,st.modules); // heuristischer Modellindex, keine DIN-Tiefenmessung
+ const targetGlass=P.nutzung==='wohnen'?.29:P.nutzung==='buero'?.55:.43;
+ // 1: directly observable visibility; an opaque wall starts at zero.
+ const visibility=20*clamp(glassStreet/.63);
+ // 2: entrance geometry, with no 14-point automatic bonus.
+ // Legibility is intentionally a modest geometric proxy: actual public access
+ // and street-level perception would need independent evaluation.
+ const entry=20*clamp((st.ground?st.entryWidth:0)/1.6)*clamp(glassStreet/.34);
+ // 3: no projecting threshold -> no depth points, even with relief slider high.
+ const depth=20*clamp((.80*e+1.05*threshold)*.75 + depthMean*.34);
+ // 4: readable pattern and a minimal varied module count; zero module variation
+ // yields a small score rather than a perfect rhythmic result.
+ const kinds=[f,e,l,b].filter(q=>q>.01).length;
+ const coherence=P.pattern==='regular'?1:P.pattern==='vertical'?.86:P.pattern==='horizontal'?.84:.57;
+ const rhythm=15*coherence*clamp((kinds-1)/3+.22);
+ // 5: usage suitability is measured separately from raw street activation.
+ // A very high glass ratio is not automatically good for residential privacy.
+ const glassFit=clamp(1-Math.abs(glassStreet-targetGlass)/Math.max(.32,targetGlass));
+ const modFit=P.nutzung==='buero'?clamp(1-.8*b-.25*l):P.nutzung==='wohnen'?clamp(.65+.45*(l+b)):.65+.3*clamp((l+b)*2);
+ const useFit=15*clamp(glassFit*.70+modFit*.30);
+ // 6: data from both generated elevations; slight intentional asymmetry is fine.
+ const courtTarget=clamp(glassStreet*.80+.045);
+ const hofBalance=10*clamp(1-Math.abs(glassHof-courtTarget)/.45)*clamp((glassStreet+glassHof)/.70);
+ const data=[['Transparenz / Sichtbezug',visibility,20],['Schwelle / Eingang',entry,20],['Räumliche Tiefe',depth,20],['Rhythmus / Gliederung',rhythm,15],['Nutzungsausdruck',useFit,15],['Hof–Straße-Balance',hofBalance,10]];
+ const score=clamp(data.reduce((sum,d)=>sum+d[1],0),0,100);
+ const root=document.getElementById('indexBreakdown');if(root){root.replaceChildren();
+  for(const [label,value,max] of data){const row=document.createElement('div');row.className='idx-row';const hd=document.createElement('div');hd.className='idx-head';
+   const t=document.createElement('span');t.textContent=label;const v=document.createElement('b');v.textContent=value.toFixed(1)+' / '+max;hd.append(t,v);
+   const track=document.createElement('div');track.className='idx-track';const fill=document.createElement('div');fill.className='idx-fill';fill.style.width=(100*value/max).toFixed(1)+'%';track.append(fill);row.append(hd,track);root.append(row);}
+ }
+ const ex=document.getElementById('indexExplain');if(ex)ex.textContent=`Straßeninteraktionsindex ${score.toFixed(1)} / 100 · reale modellierte Glasflächen: Straße ${(glassStreet*100).toFixed(1)} %, Hof ${(glassHof*100).toFixed(1)} %. Bewertung ist eine konzeptionelle Vergleichsheuristik und kein Normnachweis.`;
+ const positives=[],risks=[],actions=[];
+ if(visibility>=12)positives.push('Der geometrische Sichtbezug zur Straße ist deutlich.');else actions.push('Straßenseitige Verglasungsflächen gezielt öffnen.');
+ if(depth>=10)positives.push('Erker und Außenraumschwellen bilden räumliche Tiefe.');else actions.push('Systemgerechte Erker, Loggien oder Balkone prüfen.');
+ if(rhythm>=9)positives.push('Der Modulrhythmus ist deutlich lesbar.');else actions.push('Modulrhythmus und Rasterordnung überprüfen.');
+ if(P.nutzung==='wohnen'&&glassStreet>.50)risks.push('Der hohe Straßen-Glasanteil kann die Privatheit beeinträchtigen.');
+ if(P.nutzung==='buero'&&threshold>.30)risks.push('Außenraummodule in reiner Büronutzung gesondert begründen.');
+ if(P.system==='vorhang'&&P.systemVar==='vertikal')risks.push('Structural Glazing benötigt abgestimmte Öffnungs- und Anschlussdetails.');
+ if(P.system==='doppel')risks.push('Brandschutz, Belüftung und Reinigung des Fassadenzwischenraums sind offen.');
+ if(P.system==='sonder')risks.push('Pflege, Tragfähigkeit und energetische Wirkung sind nicht nachgewiesen.');
+ if(glassHof<.12)actions.push('Hofseite als bewussten Gegenpol zur Straße überprüfen.');
+ if(!risks.length)risks.push('Wärme-, Schall-, Brand- und Tragwerksnachweise fehlen; Modell nur als Entwurfsstudie verwenden.');
+ if(!actions.length)actions.push('Mindestens zwei Varianten am gleichen Grundstück vergleichen.');
+ const critique=document.getElementById('indexComment');if(critique)critique.textContent=`Bewertung: ${score<35?'zurückhaltender':score<70?'moderater':'stark aktivierter'} Straßenbezug. Ein hoher Wert bedeutet nicht automatisch höhere architektonische Qualität.`;
+ const analysis=document.getElementById('fassadenAnalyse');if(analysis){analysis.replaceChildren();
+  const heading=document.createElement('h3');heading.textContent='Fassadenanalyse · Entwurfsfeedback';analysis.append(heading);
+  const sys=document.createElement('p');sys.textContent=`System: ${document.getElementById('system').selectedOptions[0].textContent} · Nutzung: ${P.nutzung}. Straße: ${st.fenster} Fenster, ${st.erker} Erker, ${st.loggia} Loggien, ${st.balkon} Balkone.`;analysis.append(sys);
+  for(const [title,items] of [['Stärken',positives.length?positives:['Konsequente systembezogene Fassadenkonfiguration.']],['Konflikte und Grenzen',risks],['Nächster Entwurfsschritt',actions]]){
+   const lab=document.createElement('strong');lab.textContent=title;analysis.append(lab);
+   for(const item of items){const q=document.createElement('p');q.textContent='• '+item;analysis.append(q);}
+  }
+ }
+ return {label:'Straßeninteraktionsindex',wert:score.toFixed(1),einheit:'/ 100'};
+}
+// ==================================================================
+//  === ENDE EIGENES KRITERIUM ===
+// ==================================================================
+
+// ------------------------------------------------------------------
+//  SONNENSTAND  –  vereinfachte Berechnung (ohne Zeitgleichung)
+// ------------------------------------------------------------------
+function sonne(hour) {
+  const phi = LAT * DEG, decl = P.decl * DEG;
+  const H = (hour - 12) * 15 * DEG;                           // Stundenwinkel
+  const sinElev = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H);
+  const elev = Math.asin(Math.max(-1, Math.min(1, sinElev)));
+  const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(decl) * Math.cos(phi));
+  const A = Math.PI + azS + P.nord * DEG;                     // Azimut inkl. Nordrichtung
+  const dir = new THREE.Vector3(Math.cos(elev) * Math.sin(A), Math.sin(elev), -Math.cos(elev) * Math.cos(A));
+  return { dir, elev };
+}
+
+function buildSonnenbahn() {
+  sonneGruppe.clear();
+  if (!P.sunPath) return;
+  const c = center(), pts = [];
+  for (let h = 3; h <= 21; h += 0.2) {
+    const s = sonne(h);
+    if (s.elev > 0) pts.push(c.clone().addScaledVector(s.dir, R_DOME));
+  }
+  if (pts.length > 1) {
+    sonneGruppe.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: 0xf2a81e })
+    ));
+  }
+}
+
+function updateSonne() {
+  const c = center(), s = sonne(P.hour);
+  renderer.shadowMap.enabled = P.sunPath;
+  if (s.elev > 0.01) {
+    sun.visible = true; sun.intensity = 1.4;
+    sun.position.copy(c).addScaledVector(s.dir, R_DOME);
+    sun.target.position.copy(c); sun.target.updateMatrixWorld();
+    sunMarker.visible = P.sunPath; sunMarker.position.copy(sun.position);
+  } else {
+    sun.intensity = 0.05; sunMarker.visible = false;   // Sonne unter dem Horizont
+  }
+}
+
+function enableShadows(group) {
+  group.traverse((o) => {
+    if (o.isMesh && o.material && !o.material.wireframe) { o.castShadow = true; o.receiveShadow = true; }
+  });
+}
+
+// ------------------------------------------------------------------
+//  AUSWERTUNG  –  feste Kennzahlen, vom Template vorgegeben
+//  (misst live Ihre erzeugte Geometrie = konfiguratorGruppe)
+//  Didaktische Platzhalter – anpassbar:
+// ------------------------------------------------------------------
+const GESCHOSSHOEHE = 3.0;   // m  · für BGF = BRI / Geschosshöhe
+const CO2_FAKTOR    = 450;   // kg CO₂e je m² BGF (Platzhalter)
+const KOSTEN_FAKTOR = 2500;  // €  je m² BGF (Platzhalter)
+
+function volumenUndFlaeche(mesh) {
+  const g = mesh.geometry, pos = g && g.attributes.position;
+  if (!pos) return { v: 0, a: 0 };
+  mesh.updateWorldMatrix(true, false);
+  const m = mesh.matrixWorld, idx = g.index;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), t = new THREE.Vector3(), u = new THREE.Vector3();
+  let v = 0, area = 0;
+  const tri = idx ? idx.count / 3 : pos.count / 3;
+  for (let i = 0; i < tri; i++) {
+    const ia = idx ? idx.getX(i*3)   : i*3;
+    const ib = idx ? idx.getX(i*3+1) : i*3+1;
+    const ic = idx ? idx.getX(i*3+2) : i*3+2;
+    a.fromBufferAttribute(pos, ia).applyMatrix4(m);
+    b.fromBufferAttribute(pos, ib).applyMatrix4(m);
+    c.fromBufferAttribute(pos, ic).applyMatrix4(m);
+    v += a.dot(t.copy(b).cross(c)) / 6;                         // signiertes Tetraeder
+    area += t.copy(b).sub(a).cross(u.copy(c).sub(a)).length() / 2;
+  }
+  return { v: Math.abs(v), a: area };
+}
+
+function analyse() {
+ const geschosse=Math.max(4,Math.min(6,Math.round(P.traufe/GESCHOSSHOEHE)));
+ // Bewusst einfache Referenzhülle des maximalen Grundstücksvolumens,
+ // NICHT die reale Grundfläche der zurückgesetzten und gegliederten Fassaden.
+ const GRF=P.breite*P.tiefe;
+ const BGF=GRF*geschosse;
+ const BRI=GRF*P.traufe;
+ const grundstueck=GRF;
+ const GRZ=1; // Referenzhülle / Grundstück: keine tatsächliche GRZ
+ const GFZ=geschosse; // Referenzhülle / Grundstück: keine tatsächliche GFZ
+ const A=2*GRF+2*(P.breite+P.tiefe)*P.traufe;
+ const AV=A/BRI;
+  const co2t = BGF * CO2_FAKTOR / 1000;   // t CO₂e
+  const kost = BGF * KOSTEN_FAKTOR;       // €
+  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  set('sBRI', Math.round(BRI).toLocaleString('de-DE'));
+  set('sBGF', Math.round(BGF).toLocaleString('de-DE'));
+  set('sGRF', Math.round(GRF).toLocaleString('de-DE'));
+  set('sGesch', geschosse || '–');
+  set('sGRZ', GRZ.toFixed(2));
+  set('sGFZ', GFZ.toFixed(2));
+  set('sAV',  AV.toFixed(3));
+  set('sCO2', co2t.toFixed(1));
+  set('sKost', kost >= 1e6 ? (kost / 1e6).toFixed(2).replace('.', ',') + ' Mio. €'
+                           : Math.round(kost).toLocaleString('de-DE') + ' €');
+
+  // Eigenes, vom Studierenden definiertes Kriterium
+  let ek = null;
+  try { ek = eigenesKriterium({ BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A,
+                                breite: P.breite, tiefe: P.tiefe, traufe: P.traufe,
+                                gruppe: konfiguratorGruppe }); }
+  catch (e) { /* Fehler im eigenen Kriterium nicht fatal */ }
+  if (ek && ek.label) {
+    set('sEigenLbl', ek.label);
+    set('sEigenVal', (ek.wert !== undefined ? ek.wert : '–') + (ek.einheit ? ' ' + ek.einheit : ''));
+  } else {
+    set('sEigenLbl', '(noch zu definieren)');
+    set('sEigenVal', '–');
+  }
+}
+
+// ------------------------------------------------------------------
+//  Neu aufbauen
+// ------------------------------------------------------------------
+// ------------------------------------------------------------------
+//  BEMASSUNG  –  die wichtigsten Maße im Modell
+// ------------------------------------------------------------------
+function massLabel(text, pos) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  div.style.cssText = 'font:600 11px system-ui,sans-serif;color:#b03030;background:rgba(255,255,255,.78);padding:1px 5px;border-radius:4px;white-space:nowrap;';
+  const o = new CSS2DObject(div); o.position.copy(pos); return o;
+}
+function dimLine(a, b) {
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]),
+    new THREE.LineBasicMaterial({ color: 0xb03030 }));
+}
+function buildMasse() {
+  // Umgebungsmaße (die Baulücken-Maße sind über die Schieberegler ablesbar)
+  masseGruppe.clear();
+  const { tiefe } = P, y = 0.3, V = THREE.Vector3;
+  const hofW = BLOCK_W - 2 * SIDE_BT;
+  // Straßenbreite (quer über die Straße)
+  const xs = 15;
+  masseGruppe.add(dimLine(new V(xs, y, 0), new V(xs, y, -P.strasse)));
+  masseGruppe.add(massLabel('Straße ' + P.strasse + ' m', new V(xs + 0.6, y, -P.strasse / 2)));
+  // Innenhof-Tiefe (längs)
+  masseGruppe.add(dimLine(new V(-6, y, tiefe), new V(-6, y, tiefe + HOF)));
+  masseGruppe.add(massLabel('Innenhof-Tiefe ' + HOF + ' m', new V(-6.6, y, tiefe + HOF / 2)));
+  // Innenhof-Breite (quer, nahe Rückseite)
+  const zc = tiefe + HOF - 3;
+  masseGruppe.add(dimLine(new V(-hofW / 2, y, zc), new V(hofW / 2, y, zc)));
+  masseGruppe.add(massLabel('Innenhof-Breite ' + hofW + ' m', new V(hofW / 2 + 0.6, y, zc)));
+}
+
+function rebuildGeom() {
+  buildKontext();
+  buildKonfigurator();
+  enableShadows(konfiguratorGruppe);
+  analyse();
+  buildMasse();
+  buildSonnenbahn();
+  updateSonne();
+}
+
+// ------------------------------------------------------------------
+//  Bedienelemente
+// ------------------------------------------------------------------
+function bindGeom(id, key, labelId) {
+  const el = document.getElementById(id), out = document.getElementById(labelId);
+  el.addEventListener('input', () => { P[key] = parseFloat(el.value); out.textContent = P[key].toFixed(1); rebuildGeom(); });
+}
+bindGeom('breite', 'breite', 'vBreite');
+bindGeom('tiefe',  'tiefe',  'vTiefe');
+bindGeom('traufe', 'traufe', 'vTraufe');
+const SYSTEM_INFO={
+ vhf:'VHF: Bekleidung vor hinterlüfteter Ebene. Geeignet für differenzierte Materialwechsel und tiefere Fassadenwirkung.',
+ mauerwerk:'Mauerwerksfassade: massive Schale mit ruhiger Lochfassade, Laibungstiefe und deutlicher Öffnungsordnung.',
+ vorhang:'Vorhangfassade: nichttragende, stärker verglaste Hülle mit klarer Pfosten-Riegel-Wirkung.',
+ wdvs:'WDVS: verputzte, eher flächige Hülle. Gut für ruhige, homogene Fassadenbilder.',
+ beton:'Betonfertigteilfassade: panelisierte Tektonik mit wiederholbaren Elementen und präziser Fuge.',
+ sandwich:'Sandwichpaneel: industriell geprägte Hülle mit klaren horizontalen oder vertikalen Teilungen.',
+ doppel:'Doppelfassade: zweite Schicht vor der Hauptfassade; hier nur schematisch als Tiefen- und Filterwirkung dargestellt.',
+ sonder:'Sonderfassade: Begrünung, PV oder adaptive Schichten als zusätzliche performative Ebene.'
+};
+const SYSTEM_VARIANTS={
+ vhf:[['holz','Holzlamellen'],['metall','Metallkassette'],['keramik','Keramiktafeln'],['naturstein','Naturstein']],
+ mauerwerk:[['ziegelrot','Ziegelrot'],['klinker','Dunkler Klinker'],['hell','Heller Ziegel'],['stein','Natursteinraster']],
+ vorhang:[['klar','Pfosten-Riegel'],['spandrel','Elementfassade'],['vertikal','Structural Glazing']],
+ wdvs:[['hell','Feinputz hell'],['warm','Warmton-Putz'],['mineralisch','Mineralischer Putz']],
+ beton:[['glatt','Glatter Beton'],['gerillt','Gerillter Beton'],['brett','Brettschalung']],
+ sandwich:[['vertikal','Vertikale Paneele'],['horizontal','Horizontale Paneele'],['mikrorippe','Mikrorippe']],
+ doppel:[['klar','Transparente Außenhaut'],['lamellen','Lamellenzwischenraum'],['wintergarten','Pufferzone']],
+ sonder:[['begruenung','Begrünte Fassade'],['pv','Integrierte PV'],['adaptiv','Adaptive Schirme']]
+};
+const USE_SUGGESTIONS={
+ wohnen:{systems:['mauerwerk','vhf','wdvs'],message:'Wohnen: Lochfassade, VHF oder WDVS unterstützen kontrollierte Fenster, Erker und Balkone.'},
+ buero:{systems:['vorhang','doppel','beton'],message:'Büro: Pfosten-Riegel, Doppelfassade oder Fertigteile unterstützen ein modulares, gut lesbares Raster.'},
+ misch:{systems:['vhf','mauerwerk','vorhang'],message:'Mischnutzung: differenzierter Sockel und Obergeschosse; VHF, Mauerwerk oder Vorhangfassade sind Ausgangspunkte.'}
+};
+function enforceCompatibility(){
+ const warnings=[];
+ const recommendation=USE_SUGGESTIONS[P.nutzung];
+ const windowSelect=document.getElementById('windowMode');
+ const erkerInput=document.getElementById('erker');
+ const balkonInput=document.getElementById('balkon');
+ const loggiaInput=document.getElementById('loggia');
+ let allowedWindows=['fixed','inward','integrated','sliding','french'];
+ let maxErker=70, maxLoggia=70, maxBalkon=60;
+ let systemRule='';
+
+ if(recommendation && !recommendation.systems.includes(P.system)){
+  warnings.push(`Die Nutzung ${P.nutzung} wird eher durch ${recommendation.systems.map(s=>labelSystem(s)).join(', ')} unterstützt.`);
+ }
+
+ if(P.system==='vorhang'){
+  if(P.systemVar==='vertikal'){
+    allowedWindows=['fixed','integrated'];
+    maxErker=0; maxLoggia=0; maxBalkon=0;
+    systemRule='Structural Glazing wird hier als nahezu flächenbündige Glasfassade modelliert; auskragende Module und normale Fensterflügel sind deaktiviert.';
+  } else if(P.systemVar==='spandrel'){
+    allowedWindows=['fixed','integrated','sliding'];
+    maxErker=0; maxLoggia=0; maxBalkon=0;
+    systemRule='Elementfassade bleibt panelisiert: Erker und auskragende Balkone sind gesperrt, Loggien sind in diesem Schema ebenfalls gesperrt.';
+  } else {
+    allowedWindows=['fixed','integrated','sliding'];
+    maxErker=10; maxLoggia=0; maxBalkon=0;
+    systemRule='Pfosten-Riegel erlaubt transparente Öffnungen, aber keine Balkone oder Loggien im vereinfachten Regelwerk.';
+  }
+ } else if(P.system==='doppel'){
+  allowedWindows=['fixed','integrated'];
+  maxErker=0; maxLoggia=0; maxBalkon=0;
+  systemRule='Doppelfassade bleibt als geschichtete Hülle geschlossen; zusätzliche Vor- und Rücksprünge werden gesperrt.';
+ } else if(P.system==='sandwich'){
+  allowedWindows=['fixed','inward'];
+  maxErker=0; maxLoggia=0; maxBalkon=0;
+  systemRule='Sandwichpaneele erhalten nur begrenzte Öffnungen; Erker, Balkone und Loggien sind im vorhandenen Paneelmodell gesperrt.';
+ } else if(P.system==='beton'){
+  allowedWindows=['fixed','inward','sliding'];
+  maxErker=25; maxLoggia=25; maxBalkon=20;
+  systemRule='Betonfertigteile bevorzugen wiederholbare Module; tiefe Einzelkörper werden reduziert.';
+ } else if(P.system==='wdvs'){
+  allowedWindows=['fixed','inward','sliding','french'];
+  maxErker=30; maxLoggia=35; maxBalkon=35;
+  systemRule='WDVS wird als ruhige Putzfassade interpretiert; zu viele Vor- und Rücksprünge werden begrenzt.';
+ } else if(P.system==='mauerwerk'){
+  allowedWindows=['fixed','inward','sliding','french'];
+  maxErker=55; maxLoggia=45; maxBalkon=35;
+  systemRule='Mauerwerk trägt Lochfassade, Erker und Balkone gut; Öffnungen bleiben dennoch rhythmisch begrenzt.';
+ } else if(P.system==='vhf'){
+  allowedWindows=['fixed','inward','integrated','sliding','french'];
+  maxErker=45; maxLoggia=45; maxBalkon=35;
+  systemRule='VHF erlaubt Materialtiefe und kontrollierte Außenräume; extreme Glasanteile werden jedoch vermieden.';
+ } else if(P.system==='sonder'){
+  allowedWindows=['fixed','inward','integrated','sliding'];
+  maxErker=25; maxLoggia=30; maxBalkon=20;
+  systemRule='Sonderfassaden tragen eine Zusatzschicht; Öffnungen und Außenräume bleiben kontrolliert.';
+ }
+
+ if(P.nutzung==='buero'){
+   maxBalkon=Math.min(maxBalkon,0);
+   maxLoggia=Math.min(maxLoggia,20);
+   if(maxBalkon===0) warnings.push('Balkon im Büroprototyp deaktiviert; stattdessen werden Loggien oder innere Aufenthaltszonen empfohlen.');
+ }
+ // System exclusions also apply to residential use; do not re-enable absent modules.
+
+ if(!allowedWindows.includes(P.windowMode)){
+   P.windowMode=allowedWindows[0];
+   warnings.push('Die gewählte Fensteröffnung ist mit diesem Fassadensystem nicht kompatibel und wurde angepasst.');
+ }
+ if(P.erker>maxErker){ P.erker=maxErker; warnings.push(`Erker-Anteil auf ${maxErker}% begrenzt.`); }
+ if(P.loggia>maxLoggia){ P.loggia=maxLoggia; warnings.push(`Loggia-Anteil auf ${maxLoggia}% begrenzt.`); }
+ if(P.balkon>maxBalkon){ P.balkon=maxBalkon; warnings.push(`Balkon-Anteil auf ${maxBalkon}% begrenzt.`); }
+
+ [...windowSelect.options].forEach(o=>{o.disabled=!allowedWindows.includes(o.value);});
+ windowSelect.value=P.windowMode;
+ erkerInput.max=maxErker; erkerInput.value=P.erker; document.getElementById('vErker').textContent=P.erker;
+ loggiaInput.max=maxLoggia; loggiaInput.value=P.loggia; document.getElementById('vLoggia').textContent=P.loggia;
+ balkonInput.max=maxBalkon; balkonInput.disabled=maxBalkon===0; balkonInput.value=P.balkon; document.getElementById('vBalkon').textContent=P.balkon;
+ if(maxBalkon===0 && P.balkon===0) document.getElementById('vBalkon').textContent='0';
+ erkerInput.disabled=maxErker===0;
+ loggiaInput.disabled=maxLoggia===0;
+
+ const msgParts=[];
+ if(systemRule) msgParts.push(systemRule);
+ if(warnings.length) msgParts.push(warnings.join(' '));
+ if(!msgParts.length) msgParts.push('Kombination im konzeptionellen Regelwerk zulässig. Ausführung, Anschlüsse und Brandschutz sind separat zu prüfen.');
+ document.getElementById('compatibilityNote').textContent=msgParts.join(' ');
+}
+
+function labelSystem(v){
+ const opt=[...document.getElementById('system').options].find(o=>o.value===v);
+ return opt?opt.textContent:v;
+}
+
+function fillSystemVariants(){
+ const sel=document.getElementById('systemVar');
+ const variants=SYSTEM_VARIANTS[P.system]||[];
+ sel.replaceChildren();
+ variants.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});
+ if(!variants.some(([v])=>v===P.systemVar)) P.systemVar=variants[0]?.[0]||'';
+ sel.value=P.systemVar;
+}
+const SYSTEM_RATINGS={
+ wohnen:{mauerwerk:3,vhf:3,wdvs:3,beton:2,sonder:2,vorhang:1,sandwich:1,doppel:1},
+ buero:{vorhang:3,beton:3,doppel:3,vhf:2,sandwich:2,sonder:2,mauerwerk:1,wdvs:1},
+ misch:{vhf:3,mauerwerk:3,vorhang:3,beton:2,wdvs:2,sonder:2,doppel:2,sandwich:1}
+};
+const BASE_SYSTEM_LABELS=Object.fromEntries([...document.getElementById('system').options].map(o=>[o.value,o.textContent]));
+function updateUsageGuidance(){
+ const ranking=SYSTEM_RATINGS[P.nutzung];
+ const sorted=Object.entries(ranking).sort((a,b)=>b[1]-a[1]);
+ const top=sorted.filter(([k,v])=>v===3).map(([k])=>BASE_SYSTEM_LABELS[k]);
+ const display=document.getElementById('useRecommendation');
+ display.replaceChildren();
+ const h=document.createElement('strong');h.textContent='Nutzungsempfehlung · '+document.getElementById('nutzung').selectedOptions[0].textContent;display.append(h);
+ const para=document.createElement('p');para.textContent='Besonders geeignet zum Vergleichen: '+top.join(' · ')+'. Die Auswahl bleibt vollständig bei Ihnen.';display.append(para);
+ const legend=document.createElement('p');legend.className='muted';legend.textContent='Bewertung: ★★★ sehr passend · ★★ bedingt passend · ★ eingeschränkt';display.append(legend);
+ for(const o of document.getElementById('system').options){
+  o.textContent='★'.repeat(ranking[o.value]||1)+'  '+BASE_SYSTEM_LABELS[o.value];
+  o.title=(ranking[o.value]===3?'Besonders geeignet':ranking[o.value]===2?'Gut prüfbar':'Nur mit sorgfältiger Detailplanung')+' für diese Nutzung';
+ }
+}
+function refreshInfo(){
+ updateUsageGuidance();
+ fillSystemVariants();
+ enforceCompatibility();
+ document.getElementById('curtainControls').hidden=P.system!=='vorhang';
+ const activeLabel=document.getElementById('systemVar').selectedOptions[0]?.textContent||'';
+ document.getElementById('systemInfo').textContent=`${SYSTEM_INFO[P.system]} Gewählte Ausprägung: ${activeLabel}. Gliederung: ${document.getElementById('pattern').selectedOptions[0]?.textContent||''}.`;
+}
+for(const key of ['nutzung','strategie','hof','doorPos','pattern','windowMode']) document.getElementById(key).addEventListener('change',e=>{P[key]=e.target.value;refreshInfo();rebuildGeom();});
+document.getElementById('system').addEventListener('change',e=>{P.system=e.target.value;refreshInfo();rebuildGeom();});
+document.getElementById('systemVar').addEventListener('change',e=>{P.systemVar=e.target.value;refreshInfo();rebuildGeom();});
+for(const key of ['profile','opaque'])document.getElementById(key).addEventListener('input',e=>{P[key]=Number(e.target.value);document.getElementById('v'+key[0].toUpperCase()+key.slice(1)).textContent=P[key];rebuildGeom();});
+document.getElementById('shade').addEventListener('change',e=>{P.shade=e.target.value;rebuildGeom();});
+for(const key of ['erker','balkon','loggia','open','relief'])document.getElementById(key).addEventListener('input',e=>{P[key]=Number(e.target.value);document.getElementById('v'+key[0].toUpperCase()+key.slice(1)).textContent=P[key];enforceCompatibility();rebuildGeom();});
+function applyStrategy(kind){
+ const p={privat:[12,5,35],kontakt:[45,40,65],balance:[35,20,50]}[kind];
+ P.strategie=kind;document.getElementById('strategie').value=kind;
+ for(let i=0;i<3;i++){const k=['erker','loggia','open'][i];P[k]=p[i];document.getElementById(k).value=p[i];document.getElementById('v'+k[0].toUpperCase()+k.slice(1)).textContent=p[i];}
+ enforceCompatibility();rebuildGeom();
+}
+for(const [id,k] of [['varA','privat'],['varB','kontakt'],['varC','balance']])document.getElementById(id).addEventListener('click',()=>applyStrategy(k));
+// Purely advisory analysis: it NEVER edits P, DOM configuration controls, or geometry.
+// The user remains responsible for selecting or rejecting every recommendation.
+function recommendFacadeOptions(userText, usage=P.nutzung){
+ const t=(userText||'').toLocaleLowerCase('de-DE');
+ const patterns=[
+  {id:'privacy',re:/privat|ruhe|ruhig|blickschutz|sichtschutz|geschütz|intim|mahrem|sessiz|leise|diskret|rückzug|rueckzug/,label:'Privatheit & Rückzug'},
+  {id:'street',re:/straß|strass|kontakt|interaktion|aussicht|ausblick|begegn|einlad|sokak|etkileşim|publik|öffentlich|offen/,label:'Straßenkontakt & Ausblick'},
+  {id:'light',re:/licht|hell|tageslicht|sonne|belicht|aydın|ışık|işik/,label:'Licht & Offenheit'},
+  {id:'outside',re:/balkon|loggia|terrass|außenraum|aussenraum|draußen|draußen|balcon|açık alan/,label:'Außenraum & Schwellen'},
+  {id:'flex',re:/flexib|anpass|modular|raster|nachhalt|büro|buero|office|değiş|degis/,label:'Flexibilität & Systemlogik'}
+ ];
+ // A mere mention of Straße is not a request for more interaction.
+ // For example 'wenig Einblicke von der Straße' expresses visual privacy.
+ const streetNegative=/(?:wenig|keine?n?|ohne|vermeid|reduzier|schütz|abschirm|begrenz)\w*(?:\s+\w+){0,5}\s+(?:von|zur|zur\s+|mit|aus|an|der)?\s*(?:der\s+)?stra(?:ß|ss)e|(?:wenig|keine?n?|ohne|vermeid|reduzier|schütz|abschirm|begrenz)\w*\s+(?:einblick|kontakt|sicht|bezug)/.test(t);
+ const streetPositive=/(?:mehr|viel|stark|aktiv|direkt|offen|einlad|angenehm|gute?n?|intensiv|lebendig)\w*(?:\s+\w+){0,5}\s+(?:stra(?:ß|ss)e|kontakt|interaktion|ausblick|aussicht|bezug)|(?:kontakt|bezug|interaktion|ausblick|aussicht|begegnung|einladend)\s+(?:zur|mit|auf|in|an|zur\s+)\s*(?:der\s+)?stra(?:ß|ss)e/.test(t);
+ const matched=patterns.filter(q=>q.re.test(t) && !(q.id==='street' && streetNegative && !streetPositive));
+ const goals=matched.map(q=>q.id);
+ if(goals.length===0) goals.push(usage==='buero'?'flex':usage==='wohnen'?'privacy':'street');
+ const suggestions=[];
+ const add=(label,reason,priority=0)=>suggestions.push({label,reason,priority});
+ const mixedPrivacyStreet=goals.includes('privacy')&&goals.includes('street');
+ if(mixedPrivacyStreet){
+  add('Kompromiss: Öffnungsanteil etwa 40–55 %','Gezielte Sichtbezüge bei begrenztem Einblick; den tatsächlichen Wert wählen Sie selbst.',4);
+  add('Strategie: Ausgewogen','Ein lesbarer, gut gestalteter Eingang und geschützte Obergeschosse verbinden beide Bedürfnisse.',4);
+ }
+ if(goals.includes('privacy')&&!mixedPrivacyStreet){
+  add('Strategie: Zurückhaltend · Privatheit','Kontrollierte Einblicke von der Straße.',3);
+  add('Öffnungsanteil: eher 25–40 %','Eine ruhigere Straßenfassade mit weniger Einblicken.',2);
+  add('Hofseite: Ruhiger Hof','Die rückwärtige Seite als Gegenpol zum Straßenraum.',1);
+ }
+ if(goals.includes('street')&&!mixedPrivacyStreet){
+  add('Strategie: Straßenorientiert · Interaktion','Mehr Blickbeziehungen und Aktivierung zum Straßenraum.',3);
+  add('Öffnungsanteil: etwa 60–75 %','Mehr Sichtbezug, aber Privatheit und Sonnenstand mitdenken.',2);
+  add('Eingangslage: bewusst markieren','Ein klar erkennbarer Eingang unterstützt die Erdgeschossbeziehung.',1);
+ }
+ if(mixedPrivacyStreet){
+  add('Hofseite: Offener Hof oder ruhiger Hof nach Bedarf','Mehr Tageslicht kann auch hofseitig statt durch großflächige Straßenverglasung entstehen.',2);
+  add('Eingang: betonen','Der Eingang kann Straßenkontakt herstellen, ohne jede Wohnebene stark zu öffnen.',2);
+ }
+ if(goals.includes('light')){
+  if(!goals.includes('street')&&!goals.includes('privacy')) add('Öffnungsanteil: etwa 55–70 %','Mehr potenzielle Belichtung durch die beiden offenen Fassaden.',3);
+  add('Hofseite: Offener Hof · größere Fenster','Der Hof kann unabhängig von der Straßenseite Tageslicht bieten.',2);
+ }
+ if(goals.includes('outside')){
+  add('Loggia-Anteil: etwa 15–30 %','Rückversetzter Außenraum als geschützte Schwelle.',3);
+  add('Balkon-Anteil: etwa 10–20 %, sofern verfügbar','Eine auskragende Schwelle schafft stärkeren Straßenbezug.',2);
+ }
+ if(goals.includes('flex')){
+  add('Gliederung: Regelmäßig','Ein nachvollziehbares Raster erleichtert den Systemvergleich.',3);
+  add('Fassadensystem: VHF oder Vorhangfassade','Unterschiedliche modulare Hüllprinzipien können verglichen werden.',2);
+ }
+ if(usage==='wohnen') add('Systemvorschlag für Wohnen: Mauerwerk, VHF oder WDVS','Die Varianten erlauben einen Vergleich von Öffnungstiefe und Privatheit.',1);
+ if(usage==='buero') add('Systemvorschlag für Büro: Vorhangfassade oder Betonfertigteile','Raster und transparente Bereiche lassen sich klar artikulieren.',1);
+ if(usage==='misch') add('Systemvorschlag für Mischnutzung: VHF oder Mauerwerk','Sockel und Obergeschosse können unterschiedlich wirken.',1);
+ const name=matched.map(q=>q.label);
+ const conflicts=[];
+ if(goals.includes('privacy')&&goals.includes('street')) conflicts.push('Mehr Straßenkontakt kann mit dem Wunsch nach Privatheit kollidieren. Entscheiden Sie selbst, was Priorität hat.');
+ if(goals.includes('outside')&&((P.system==='vorhang'&&P.systemVar==='vertikal')||P.system==='doppel')) conflicts.push('Das aktuelle Glas-/Doppelfassadenmodell sperrt Balkon und Loggia. Ein anderes Fassadensystem prüfen, bevor Sie Außenraum wählen.');
+ if(usage==='buero'&&goals.includes('outside')) conflicts.push('Im vereinfachten Büro-Regelwerk ist ein auskragender Balkon deaktiviert; Loggia nur eingeschränkt verfügbar.');
+ return {name:name.length?name.join(' · '):'Allgemeine Entwurfsabsicht',suggestions:suggestions.sort((a,b)=>b.priority-a.priority).slice(0,6),conflicts,hasText:!!t.trim()};
+}
+function renderAdvice(result){
+ const root=document.getElementById('wunschResult');root.replaceChildren();
+ const head=document.createElement('strong');head.textContent='Empfehlung · '+result.name;root.append(head);
+ const lead=document.createElement('p');lead.textContent='Aus Ihrer Beschreibung ergeben sich folgende Optionen. Nichts wurde am Modell verändert:';root.append(lead);
+ const list=document.createElement('ul');
+ for(const item of result.suggestions){const li=document.createElement('li');const bold=document.createElement('strong');bold.textContent=item.label;li.append(bold,document.createTextNode(' — '+item.reason));list.append(li)}
+ root.append(list);
+ for(const conflict of result.conflicts){const note=document.createElement('p');note.className='muted';note.textContent='Hinweis: '+conflict;root.append(note)}
+ const footer=document.createElement('p');footer.className='muted';footer.textContent='Regelbasiertes Vorschlagsystem, keine KI-Sprachanalyse, keine technische Freigabe. Werte können durch die System-Kompatibilitätsregeln begrenzt werden.';root.append(footer);
+ const goto=document.createElement('button');goto.type='button';goto.textContent='Optionen selbst auswählen ↓';goto.addEventListener('click',()=>document.getElementById('system').scrollIntoView({behavior:'smooth',block:'center'}));root.append(goto);
+}
+// Kamera-Voreinstellungen: Straßenseite bei -Z, Hofseite bei +Z.
+// Keine Änderungen an Parametern, Geometrie oder Bewertung.
+function setFacadeView(side){
+ const target=center();
+ const dist=Math.max(23,P.breite*2.4);
+ if(side==='street') camera.position.set(0,target.y,-dist);
+ else if(side==='court') camera.position.set(0,target.y,P.tiefe+dist);
+ else camera.position.set(30,30,-24);
+ controls.target.copy(target);
+ camera.lookAt(target);
+ controls.update();
+}
+document.getElementById('viewStreet').addEventListener('click',()=>setFacadeView('street'));
+document.getElementById('viewCourt').addEventListener('click',()=>setFacadeView('court'));
+document.getElementById('view3d').addEventListener('click',()=>setFacadeView('overview'));
+document.getElementById('interpretieren').addEventListener('click',()=>{
+ renderAdvice(recommendFacadeOptions(document.getElementById('wunsch').value));
+});
+refreshInfo();
+const strEl = document.getElementById('strasse');
+strEl.addEventListener('input', () => { P.strasse = parseFloat(strEl.value); document.getElementById('vStrasse').textContent = P.strasse; rebuildGeom(); });
+
+const hourEl = document.getElementById('hour');
+hourEl.addEventListener('input', () => {
+  P.hour = parseFloat(hourEl.value);
+  const h = Math.floor(P.hour), m = Math.round((P.hour - h) * 60);
+  document.getElementById('vHour').textContent = h + ':' + String(m).padStart(2, '0');
+  updateSonne();
+});
+document.getElementById('season').addEventListener('change', (e) => { P.decl = parseFloat(e.target.value); buildSonnenbahn(); updateSonne(); });
+const nordEl = document.getElementById('nord');
+nordEl.addEventListener('input', () => { P.nord = parseFloat(nordEl.value); document.getElementById('vNord').textContent = P.nord; buildSonnenbahn(); updateSonne(); });
+document.getElementById('sunpath').addEventListener('change', (e) => { P.sunPath = e.target.checked; buildSonnenbahn(); updateSonne(); });
+
+// ------------------------------------------------------------------
+//  Export (Ihr Ergebnis = konfiguratorGruppe)
+// ------------------------------------------------------------------
+function download(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+document.getElementById('expObj').addEventListener('click', () => {
+  try { download('konfigurator.obj', new OBJExporter().parse(konfiguratorGruppe), 'text/plain'); } catch(e){alert('OBJ-Export fehlgeschlagen: '+e.message);}
+});
+document.getElementById('expGltf').addEventListener('click', () => {
+  try { new GLTFExporter().parse(konfiguratorGruppe, (gltf) => {
+    download('konfigurator.gltf', JSON.stringify(gltf), 'application/json');
+  }, (e) => { console.error(e); alert('glTF-Export fehlgeschlagen: '+e.message); }, { binary: false }); } catch(e){ alert('glTF-Export fehlgeschlagen: '+e.message); }
+});
+
+// ------------------------------------------------------------------
+//  Render-Loop
+// ------------------------------------------------------------------
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
+rebuildGeom();
+(function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+})();
+</script>
+</body>
+</html>
